@@ -21,6 +21,6 @@ jobs:
 
   delete-comment:
     if: github.event.pull_request.base.ref == 'develop' || github.event.pull_request.base.ref == 'release'
-    uses: MamaLemon/TestTelegramMessageNotifyAction/.github/workflows/delete-bot-approve-comment.yml@develop
+    uses: MamaLemon/TestAction/.github/workflows/delete-bot-approve-comment.yml@develop
     with:
       number: ${{ github.event.pull_request.number }}

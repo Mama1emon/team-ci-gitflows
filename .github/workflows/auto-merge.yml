@@ -5,15 +5,24 @@ on:
     types:
       - completed
 jobs:
+  printJob:
+    name: Print event
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dump GitHub context
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github) }}
+        run: |
+          echo "$GITHUB_CONTEXT"
   auto-merge-to-develop :
-    if: github.event.workflow.pull_request.base.ref == 'develop' && github.event.workflow_run.conclusion == 'success'
+    if: github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     steps:
       - name: Find second approve comment
         id: find-last-comment
         uses: peter-evans/find-comment@v1
         with:
-          issue-number: ${{ github.event.workflow.pull_request.number }}
+          issue-number: ${{ github.event.workflow_run.pull_request.number }}
           comment-author: 'github-actions[bot]'
           body-includes: 'Все аппрувы получены!'
 
@@ -21,23 +30,23 @@ jobs:
         run: |
           echo ${{ secrets.GH }} > secret.txt
           gh auth login --with-token < secret.txt
-          gh pr merge ${{ github.event.workflow.pull_request.html_url }} -s
+          gh pr merge ${{ github.event.workflow_run.pull_request.html_url }} -s
 
       - name: GitHub Bot comment
         uses: peter-evans/create-or-update-comment@v1
         with:
-          issue-number: ${{ github.event.workflow.pull_request.number }}
-          body: Автомёрдж ${{ github.event.workflow.pull_request.head.ref }} в develop
+          issue-number: ${{ github.event.workflow_run.pull_request.number }}
+          body: Автомёрдж ${{ github.event.workflow_run.pull_request.head.ref }} в develop
           
   auto-merge-to-release:
-    if: github.event.workflow.pull_request.base.ref == 'release' && github.event.workflow_run.conclusion == 'success'
+    if: github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     steps:
       - name: Find second approve comment
         id: find-last-comment
         uses: peter-evans/find-comment@v1
         with:
-          issue-number: ${{ github.event.workflow.pull_request.number }}
+          issue-number: ${{ github.event.workflow_run.pull_request.number }}
           comment-author: 'github-actions[bot]'
           body-includes: 'Все аппрувы получены!'
 
@@ -46,13 +55,13 @@ jobs:
         run: |
           echo ${{ secrets.GH }} > secret.txt
           gh auth login --with-token < secret.txt
-          gh pr merge ${{ github.event.workflow.pull_request.html_url }} -s
-          gh pr create --fill --base develop --head ${{ github.event.workflow.pull_request.head.ref }} --no-maintainer-edit
-          gh pr merge ${{ github.event.workflow.pull_request.head.ref }} -s
+          gh pr merge ${{ github.event.workflow_run.pull_request.html_url }} -s
+          gh pr create --fill --base develop --head ${{ github.event.workflow_run.pull_request.head.ref }} --no-maintainer-edit
+          gh pr merge ${{ github.event.workflow_run.pull_request.head.ref }} -s
 
       - name: GitHub Bot comment
         if: steps.find-last-comment.outputs.comment-id != 0
         uses: peter-evans/create-or-update-comment@v1
         with:
-          issue-number: ${{ github.event.workflow.pull_request.number }}
-          body: Автомёрдж ${{ github.workflow.event.pull_request.head.ref }} в release
+          issue-number: ${{ github.event.workflow_run.pull_request.number }}
+          body: Автомёрдж ${{ github.workflow_run.event.pull_request.head.ref }} в release
