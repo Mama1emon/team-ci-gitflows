@@ -1,0 +1,18 @@
+name: Notify when PR was merged
+on:
+  pull_request:
+    types: [ closed ]
+jobs:
+  merged:
+    if: (github.event.pull_request.base.ref == 'develop' || github.event.pull_request.base.ref == 'release') && github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Telegram message
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          message: |
+            ПР(#${{ github.event.number }}): «${{ github.event.pull_request.title }}» успешно влит в ${{ github.event.pull_request.base.ref }}!
+
+            Узнать больше: ${{ github.event.pull_request.html_url }}

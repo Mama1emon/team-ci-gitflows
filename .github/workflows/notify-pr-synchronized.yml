@@ -1,0 +1,26 @@
+name: Notify when PR was synchronized
+on:
+  pull_request:
+    types: [ synchronize ]
+jobs:
+  synchronized:
+    if: github.event.pull_request.base.ref == 'develop' || github.event.pull_request.base.ref == 'release'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Telegram message
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          message: |
+            ${{ github.event.sender.login }} обновил ПР(#${{ github.event.number }}): «${{ github.event.pull_request.title }}»!
+
+            Все аппрувы сброшены. Для слияния требуется 2 аппрува!
+
+            Узнать больше: ${{ github.event.pull_request.html_url }}
+
+  delete-comment:
+    if: github.event.pull_request.base.ref == 'develop' || github.event.pull_request.base.ref == 'release'
+    uses: MamaLemon/TestTelegramMessageNotifyAction/.github/workflows/delete-bot-approve-comment.yml@develop
+    with:
+      number: ${{ github.event.pull_request.number }}

@@ -1,0 +1,60 @@
+name: Auto-merge when PR was approved
+on:
+  workflow_run:
+    workflows: ["Notify when PR was approved"]
+    types:
+      - completed
+jobs:
+  auto-merge-to-develop :
+    if: github.event.workflow.pull_request.base.ref == 'develop' && github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Find second approve comment
+        id: find-last-comment
+        uses: peter-evans/find-comment@v1
+        with:
+          issue-number: ${{ github.event.workflow.pull_request.number }}
+          comment-author: 'github-actions[bot]'
+          body-includes: 'Все аппрувы получены!'
+
+      - name: Auto merge
+        if: steps.find-last-comment.outputs.comment-id != 0
+        run: |
+          echo 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 > secret.txt
+          gh auth login --with-token < secret.txt
+          gh pr merge ${{ github.event.workflow.pull_request.html_url }} -s
+
+      - name: GitHub Bot comment
+        if: steps.find-last-comment.outputs.comment-id != 0
+        uses: peter-evans/create-or-update-comment@v1
+        with:
+          issue-number: ${{ github.event.workflow.pull_request.number }}
+          body: Автомёрдж ${{ github.event.workflow.pull_request.head.ref }} в develop
+          
+  auto-merge-to-release:
+    if: github.event.workflow.pull_request.base.ref == 'release' && github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Find second approve comment
+        id: find-last-comment
+        uses: peter-evans/find-comment@v1
+        with:
+          issue-number: ${{ github.event.workflow.pull_request.number }}
+          comment-author: 'github-actions[bot]'
+          body-includes: 'Все аппрувы получены!'
+
+      - name: Auto merge
+        if: steps.find-last-comment.outputs.comment-id != 0
+        run: |
+          echo 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 > secret.txt
+          gh auth login --with-token < secret.txt
+          gh pr merge ${{ github.event.workflow.pull_request.html_url }} -s
+          gh pr create --fill --base develop --head ${{ github.event.workflow.pull_request.head.ref }} --no-maintainer-edit
+          gh pr merge ${{ github.event.workflow.pull_request.head.ref }} -s
+
+      - name: GitHub Bot comment
+        if: steps.find-last-comment.outputs.comment-id != 0
+        uses: peter-evans/create-or-update-comment@v1
+        with:
+          issue-number: ${{ github.event.workflow.pull_request.number }}
+          body: Автомёрдж ${{ github.workflow.event.pull_request.head.ref }} в release

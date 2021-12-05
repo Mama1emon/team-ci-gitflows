@@ -1,0 +1,47 @@
+name: Delete bot approve's comments
+on:
+  workflow_call:
+    inputs:
+      number:
+        description: Number of pull request
+        type: string
+        required: true
+jobs:
+  delete-comment:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Find first approve comment
+        id: find-first-approve-comment
+        uses: peter-evans/find-comment@v1
+        with:
+          issue-number: ${{ inputs.number }}
+          comment-author: 'github-actions[bot]'
+          body-includes: 'Для слияния не хватает ещё одного аппрува!'
+
+      - name: GitHub Bot update first approve comment
+        if: steps.find-first-approve-comment.outputs.comment-id != 0
+        uses: peter-evans/create-or-update-comment@v1
+        with:
+          comment-id: ${{ steps.find-first-approve-comment.outputs.comment-id }}
+          issue-number: ${{ inputs.number }}
+          body: 'Информация засекречена! Забудьте, что вы видели!'
+          reactions: eyes
+          edit-mode: replace
+
+      - name: Find second approve comment
+        id: find-second-approve-comment
+        uses: peter-evans/find-comment@v1
+        with:
+          issue-number: ${{ inputs.number }}
+          comment-author: 'github-actions[bot]'
+          body-includes: 'Все аппрувы получены!'
+
+      - name: GitHub Bot update second approve comment
+        if: steps.find-second-approve-comment.outputs.comment-id != 0
+        uses: peter-evans/create-or-update-comment@v1
+        with:
+          comment-id: ${{ steps.find-second-approve-comment.outputs.comment-id }}
+          issue-number: ${{ inputs.number }}
+          body: 'Информация засекречена! Забудьте, что вы видели!'
+          reactions: eyes
+          edit-mode: replace

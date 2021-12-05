@@ -1,0 +1,32 @@
+name: Notify when PR was commented or requested changes
+on:
+  pull_request_review:
+    types: [ submitted ]
+jobs:
+  commented:
+    if: (github.event.pull_request.base.ref == 'develop' || github.event.pull_request.base.ref == 'release') && github.event.review.state == 'commented'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Telegram message
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          message: |
+            ${{ github.event.sender.login }} оставил комментарии на ПР(#${{ github.event.pull_request.number }}): «${{ github.event.pull_request.title }}» !
+
+            Узнать больше: ${{ github.event.pull_request.html_url }}
+
+  changes_requested:
+    if: (github.event.pull_request.base.ref == 'develop' || github.event.pull_request.base.ref == 'release') && github.event.review.state == 'changes_requested'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Telegram message
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          message: |
+            ${{ github.event.sender.login }} оставил задачи для доработки ПР(#${{ github.event.pull_request.number }}): «${{ github.event.pull_request.title }}» !
+
+            Узнать больше: ${{ github.event.pull_request.html_url }}

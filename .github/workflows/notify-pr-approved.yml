@@ -1,0 +1,56 @@
+name: Notify when PR was approved
+on:
+  pull_request_review:
+    types: [ submitted ]
+jobs:
+  approved:
+    if: (github.event.pull_request.base.ref == 'develop' || github.event.pull_request.base.ref == 'release') && github.event.review.state == 'approved'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Find first approve comment
+        id: find-last-comment
+        uses: peter-evans/find-comment@v1
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: 'github-actions[bot]'
+          body-includes: 'Для слияния не хватает ещё одного аппрува!'
+
+      - name: Send Telegram message if it's first approve
+        if: steps.find-last-comment.outputs.comment-id == 0
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          message: |
+            ${{ github.event.sender.login }} одобрил ПР(#${{ github.event.pull_request.number }}): «${{ github.event.pull_request.title }}» !
+
+            Для слияния не хватает ещё одного аппрува!
+
+            Узнать больше: ${{ github.event.pull_request.html_url }}
+
+      - name: GitHub Bot comment if it's first approve
+        if: steps.find-last-comment.outputs.comment-id == 0
+        uses: peter-evans/create-or-update-comment@v1
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body: 'Для слияния не хватает ещё одного аппрува!'
+
+      - name: Send Telegram message if it's second approve
+        if: steps.find-last-comment.outputs.comment-id != 0
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          message: |
+            ${{ github.event.sender.login }} одобрил ПР(#${{ github.event.pull_request.number }}): «${{ github.event.pull_request.title }}» !
+
+            Все аппрувы получены!
+
+            Узнать больше: ${{ github.event.pull_request.html_url }}
+
+      - name: GitHub Bot comment if it's second approve
+        if: steps.find-last-comment.outputs.comment-id != 0
+        uses: peter-evans/create-or-update-comment@v1
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body: 'Все аппрувы получены!'
