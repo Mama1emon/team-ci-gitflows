@@ -1,0 +1,45 @@
+name: Auto-merge when PR was approved
+on:
+  workflow_run:
+    workflows: ["Notify when PR was approved"]
+    brances: [release]
+    types:
+      - completed
+jobs:
+  printJob:
+    name: Print event
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dump GitHub context
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github) }}
+        run: |
+          echo "$GITHUB_CONTEXT"
+
+  auto-merge-to-release:
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Find second approve comment
+        id: find-last-comment
+        uses: peter-evans/find-comment@v1
+        with:
+          issue-number: ${{ github.run_number }}
+          comment-author: 'github-actions[bot]'
+          body-includes: 'Все аппрувы получены!'
+
+      - name: Auto merge
+        if: steps.find-last-comment.outputs.comment-id != 0
+        run: |
+          echo ${{ secrets.GH }} > secret.txt
+          gh auth login --with-token < secret.txt
+          gh pr merge ${{ github.event.workflow_run.head_branch }} -s
+          gh pr create --fill --base develop --head ${{ github.event.workflow_run.head_branch }} --no-maintainer-edit
+          gh pr merge ${{ github.event.workflow_run.head_branch }} -s
+
+      - name: GitHub Bot comment
+        if: steps.find-last-comment.outputs.comment-id != 0
+        uses: peter-evans/create-or-update-comment@v1
+        with:
+          issue-number: ${{ github.run_number }}
+          body: Автомёрдж ${{ github.event.workflow_run.head_branch }} в release
