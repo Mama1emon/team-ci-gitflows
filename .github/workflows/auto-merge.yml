@@ -19,7 +19,7 @@ jobs:
 
       - name: Auto merge
         run: |
-          echo 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 > secret.txt
+          echo ${{ secrets.GH }} > secret.txt
           gh auth login --with-token < secret.txt
           gh pr merge ${{ github.event.workflow.pull_request.html_url }} -s
 
@@ -44,7 +44,7 @@ jobs:
       - name: Auto merge
         if: steps.find-last-comment.outputs.comment-id != 0
         run: |
-          echo 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 > secret.txt
+          echo ${{ secrets.GH }} > secret.txt
           gh auth login --with-token < secret.txt
           gh pr merge ${{ github.event.workflow.pull_request.html_url }} -s
           gh pr create --fill --base develop --head ${{ github.event.workflow.pull_request.head.ref }} --no-maintainer-edit
